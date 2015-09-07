@@ -14,16 +14,22 @@
 #include "connect.h"
 
 extern struct user_states* users;
+pthread_mutex_t mutex_users = PTHREAD_MUTEX_INITIALIZER;
 
-void log(char* log_content)
+
+void log(char* from, char* log_content)
 {
-    printf("%s\n", log_content);
+    printf("%s : %s\n", from, log_content);
 }
 
 void broadcast(struct msg_pkt* msg)
 {
     struct user_states arr_users[MAX_FR_LS];
+
+    pthread_mutex_lock(&mutex_users);
     int size = trav_tree(users, arr_users);
+    pthread_mutex_unlock(&mutex_users);
+
     for(int i = 0;i < size;i ++)
     {
         //send_msg.msg_data.
@@ -54,8 +60,7 @@ void *client_session(void *arg)
             str_ip,
             sizeof str_ip);
 
-    log("new client from");
-    log(str_ip);
+    log(str_ip, "Online");
     // save this user to user list
     //struct user_states* client = create_user_node(client_sockfd, ip, "default");
 
@@ -65,7 +70,10 @@ void *client_session(void *arg)
     client ->user_ip_addr = ip;
     strcpy(client -> user_name, "default");
 
+    pthread_mutex_lock(&mutex_users);
     add_user(&users, client);
+    pthread_mutex_unlock(&mutex_users);
+
 
     int is_on = 1;
 
@@ -79,11 +87,13 @@ void *client_session(void *arg)
         is_on = recv_pkt(client_sockfd, &recv_msg);
         if(is_on == 0)
         {
-            log("Client offline.");
-            log(str_ip);
+            log(str_ip, "Offline");
 
+            pthread_mutex_lock(&mutex_users);
             trans_node(&send_msg.msg_data.friends.users[0], client);
             remove_user(&users, ip);
+            pthread_mutex_unlock(&mutex_users);
+
 
             send_msg.msg_data.friends.size = 1;
             send_msg.flag = BYE;
@@ -93,19 +103,24 @@ void *client_session(void *arg)
         switch(recv_msg.flag)
         {
             case HELLO:
+                log(str_ip, "Hello!");
                 if(recv_msg.msg_data.message.msg_str != NULL)
                     strcpy(client -> user_name, recv_msg.msg_data.message.msg_str);
 
+                pthread_mutex_lock(&mutex_users);
                 trans_node(&send_msg.msg_data.friends.users[0], client);
+                pthread_mutex_unlock(&mutex_users);
 
                 send_msg.msg_data.friends.size = 1;
                 send_msg.flag = HELLO;
                 broadcast(&send_msg);
                 break;
             case MSG:
+                log(str_ip, "Message");
                 // reserved
                 break;
             case FR_LS:
+                log(str_ip, "Who's on");
                 // ******* TODO if friends' list is too large, split the message ******
                 send_msg.flag = FR_LS;
                 send_msg.msg_data.friends.size = trav_tree(users, send_msg.msg_data.friends.users);

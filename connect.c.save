@@ -14,8 +14,10 @@
 #include "connect.h"
 
 extern struct user_states* users;
+pthread_mutex_t mutex_users = PTHREAD_MUTEX_INITIALIZER;
 
-void log(char* log_content)
+
+void log(char* from, char* log_content)
 {
     printf("%s\n", log_content);
 }
@@ -23,7 +25,11 @@ void log(char* log_content)
 void broadcast(struct msg_pkt* msg)
 {
     struct user_states arr_users[MAX_FR_LS];
+
+    pthread_mutex_lock(&mutex_users);
     int size = trav_tree(users, arr_users);
+    pthread_mutex_unlock(&mutex_users);
+
     for(int i = 0;i < size;i ++)
     {
         //send_msg.msg_data.
@@ -65,7 +71,10 @@ void *client_session(void *arg)
     client ->user_ip_addr = ip;
     strcpy(client -> user_name, "default");
 
+    pthread_mutex_lock(&mutex_users);
     add_user(&users, client);
+    pthread_mutex_unlock(&mutex_users);
+
 
     int is_on = 1;
 
@@ -82,8 +91,11 @@ void *client_session(void *arg)
             log("Client offline.");
             log(str_ip);
 
+            pthread_mutex_lock(&mutex_users);
             trans_node(&send_msg.msg_data.friends.users[0], client);
             remove_user(&users, ip);
+            pthread_mutex_unlock(&mutex_users);
+
 
             send_msg.msg_data.friends.size = 1;
             send_msg.flag = BYE;
@@ -96,7 +108,9 @@ void *client_session(void *arg)
                 if(recv_msg.msg_data.message.msg_str != NULL)
                     strcpy(client -> user_name, recv_msg.msg_data.message.msg_str);
 
+                pthread_mutex_lock(&mutex_users);
                 trans_node(&send_msg.msg_data.friends.users[0], client);
+                pthread_mutex_unlock(&mutex_users);
 
                 send_msg.msg_data.friends.size = 1;
                 send_msg.flag = HELLO;
