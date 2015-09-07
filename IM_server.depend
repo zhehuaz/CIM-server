@@ -1,5 +1,5 @@
 # depslib dependency file v1.0
-1441539294 source:/home/langley/programe/IM_server/connect.c
+1441605490 source:/home/langley/programe/IM_server/connect.c
 	<sys/socket.h>
 	<sys/select.h>
 	<sys/time.h>
@@ -14,23 +14,24 @@
 	"bi_tree.h"
 	"connect.h"
 
-1441540220 source:/home/langley/programe/IM_server/main.c
+1441593101 source:/home/langley/programe/IM_server/main.c
 	<stdio.h>
 	<stdlib.h>
+	<stdbool.h>
 	<math.h>
 	"bi_tree.h"
 	"connect.h"
 
-1441540829 source:/home/langley/programe/IM_server/bi_tree.c
+1441605332 source:/home/langley/programe/IM_server/bi_tree.c
 	<stdlib.h>
 	<stdbool.h>
 	<string.h>
 	"bi_tree.h"
 	"connect.h"
 
-1441540145 /home/langley/programe/IM_server/bi_tree.h
+1441605205 /home/langley/programe/IM_server/bi_tree.h
 	<stdio.h>
 
-1441539506 /home/langley/programe/IM_server/connect.h
+1441605340 /home/langley/programe/IM_server/connect.h
 	"bi_tree.h"
 

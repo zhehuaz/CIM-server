@@ -20,8 +20,6 @@ void trans_node(struct user_info *dst, struct user_states *src)
 {
     if(dst == NULL || src == NULL)
         return ;
-    strcpy(dst -> user_name, src -> user_name);
-    dst -> user_ip_addr = src -> user_ip_addr;
 }
 
 void release_user_tree(struct user_states** root)
@@ -175,7 +173,7 @@ void rev_trav(struct user_states *root, struct user_info* dst, int* size)
         return ;
 
     rev_trav(root -> lchild, dst, size);
-    trans_node(&dst[(*size) ++], root);
+    copy_node(&dst[(*size) ++], root);
     rev_trav(root -> rchild, dst, size);
 }
 

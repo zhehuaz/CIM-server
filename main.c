@@ -3,11 +3,15 @@
 */
 #include <stdio.h>
 #include <stdlib.h>
+#include <stdbool.h>
 #include <math.h>
 #include "bi_tree.h"
 #include "connect.h"
 
 const int port = 25582;
+
+struct user_states* users;
+
 
 int main()
 {
@@ -34,7 +38,14 @@ int main()
 
     release_user_tree(&root);*/
 
-
+    users = create_user_tree();
+    int server_sockfd = start_server(port);
+    bool is_running = true;
+    while(is_running)
+    {
+        wait_for_new_clients(server_sockfd);
+    }
+    release_user_tree(&users);
 
 
 }

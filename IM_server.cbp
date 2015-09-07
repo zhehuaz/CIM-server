@@ -34,9 +34,11 @@
 		<Unit filename="bi_tree.c">
 			<Option compilerVar="CC" />
 		</Unit>
+		<Unit filename="bi_tree.h" />
 		<Unit filename="connect.c">
 			<Option compilerVar="CC" />
 		</Unit>
+		<Unit filename="connect.h" />
 		<Unit filename="main.c">
 			<Option compilerVar="CC" />
 		</Unit>
