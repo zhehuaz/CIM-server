@@ -63,7 +63,6 @@ void *client_session(void *arg)
     log(str_ip, "Online");
     // save this user to user list
     //struct user_states* client = create_user_node(client_sockfd, ip, "default");
-
     // ********* TODO why not create_user_node()?? *******
     struct user_states* client = (struct user_states*) malloc(sizeof(struct user_states));
     client ->user_sockfd = client_sockfd;
@@ -85,6 +84,8 @@ void *client_session(void *arg)
         memset(&recv_msg, 0, sizeof recv_msg);
         memset(&send_msg, 0, sizeof send_msg);
         is_on = recv_pkt(client_sockfd, &recv_msg);
+
+        // A user is offline. Tell all the online users about this.
         if(is_on == 0)
         {
             log(str_ip, "Offline");
@@ -94,14 +95,21 @@ void *client_session(void *arg)
             remove_user(&users, ip);
             pthread_mutex_unlock(&mutex_users);
 
-
             send_msg.msg_data.friends.size = 1;
             send_msg.flag = BYE;
             broadcast(&send_msg);
             break;
         }
+
+        // Handle this message from the client
         switch(recv_msg.flag)
         {
+            /**
+            *   Everytime a client connect to the server, it sends a "hello" packet
+            *   to the server, in order that let the server know its new name, which
+            *   is "default" by default.The server log the new username in the online
+            *   users' tree, and broadcast the new-online message to let all know.
+            */
             case HELLO:
                 log(str_ip, "Hello!");
                 if(recv_msg.msg_data.message.msg_str != NULL)
@@ -115,10 +123,21 @@ void *client_session(void *arg)
                 send_msg.flag = HELLO;
                 broadcast(&send_msg);
                 break;
+            /**
+            *   A client wants to send a message to some clients.The server is responsible
+            *   to transfer this message.
+            *   A session defines a chat group with some clients in it sending and receiving
+            *   messages.The server maintains a session number to keep the session ids of all the
+            *   clients consistent and unique.
+            */
             case MSG:
-                log(str_ip, "Message");
+                log(str_ip, "Hey, you");
                 // reserved
                 break;
+            /**
+            *   A client asks "Who's on?" to the server, and the server responds an array of
+            *   all the online clients' infomation.
+            */
             case FR_LS:
                 log(str_ip, "Who's on");
                 // ******* TODO if friends' list is too large, split the message ******
@@ -126,6 +145,36 @@ void *client_session(void *arg)
                 send_msg.msg_data.friends.size = trav_tree(users, send_msg.msg_data.friends.users);
                 send_msg.length = sizeof send_msg;
                 send_pkt(client_sockfd,&send_msg);
+                break;
+            /**
+            *   Before chat to a group of clients, the requesting client need to send a request
+            *   the server.Then, the server tell the other clients that one client want to chat
+            *   with all of them so that they get prepared
+            */
+            case RES_CHAT:
+                log(str_ip, "Let's play");
+
+                struct user_states *pointer;
+                send_msg.msg_data.message.size = 0;
+                int size = recv_msg.msg_data.message.size;
+                pthread_mutex_lock(&mutex_users);
+                for(int i = 0; i < size; i ++)
+                {
+                    pointer = find_user(&users, recv_msg.msg_data.message.dest_users[i].user_ip_addr);
+                    if(pointer != NULL)
+                        trans_node(&send_msg.msg_data.message.dest_users[send_msg.msg_data.message.size ++],
+                         &recv_msg.msg_data.message.dest_users[i]);
+                    else
+                    {
+                        // TODO Do I need to tell him that this guy has gone?
+                    }
+                }
+                pthread_mutex_unlock(&mutex_users);
+                send_msg.flag = RES_CHAT;
+                for(int i = 0;i < send_msg.msg_data.message.size;i ++)
+                {
+                    send_pkt(send_msg.msg_data.message.dest_users[i].user_sockfd , &send_msg);
+                }
                 break;
         }
     }

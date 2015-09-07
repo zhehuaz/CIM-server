@@ -19,21 +19,24 @@ enum FLAG{
     HELLO, // client say hello to server
     BYE,
     MSG, // client sends messages to friends
+    RES_CHAT, // clients request to chat with a group of people
     FR_LS // client requires friend list
+};
+
+
+struct user_info
+{
+    unsigned long user_ip_addr;
+    char user_name[MAX_USERNAME];
+    int user_sockfd;
 };
 
 struct chat_msg
 {
     int session_id;
     int size;
-    unsigned long des_ip[MAX_MULTI_CHAT];
+    struct user_info dest_users[MAX_MULTI_CHAT];
     char msg_str[MAX_MSG];
-};
-
-struct user_info
-{
-    unsigned long user_ip_addr;
-    char user_name[MAX_USERNAME];
 };
 
 struct friends_info

@@ -22,6 +22,7 @@ void trans_node(struct user_info *dst, struct user_states *src)
         return ;
     strcpy(dst -> user_name, src -> user_name);
     dst -> user_ip_addr = src -> user_ip_addr;
+    dst -> user_sockfd = src -> user_sockfd;
 }
 
 void release_user_tree(struct user_states** root)
