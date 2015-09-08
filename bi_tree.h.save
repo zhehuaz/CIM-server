@@ -30,6 +30,16 @@ struct user_states
     struct user_states *parent;
 };
 
-
+void copy_node(struct user_states*, struct user_states*);
+void trans_node(struct user_states*, struct user_states*);
+void release_user_tree(struct user_states**);
+struct user_states* create_user_tree();
+bool is_leaf(struct user_states*);
+void add_user(struct user_states**, struct user_states*);
+struct user_states* find_user(struct user_states*, unsigned long);
+struct user_states* find_max_user(struct user_states*);
+struct user_states* find_min_user(struct user_states*);
+int remove_user(struct user_states**, unsigned long);
+int trav_tree(struct user_states*, struct user_info*)
 
 #endif // BI_TREE_H_INCLUDED

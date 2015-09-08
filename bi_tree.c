@@ -81,7 +81,7 @@ void add_user(struct user_states** root, struct user_states* new_user)
             else
                 pointer = pointer -> rchild;
         }
-        else
+        else if(new_user -> user_ip_addr < pointer -> user_ip_addr)
         {
             if(pointer -> lchild == NULL)
             {
@@ -92,6 +92,8 @@ void add_user(struct user_states** root, struct user_states* new_user)
             else
                 pointer = pointer -> lchild;
         }
+        else
+            return ;
     }
 
     if(new_user != NULL)
@@ -153,14 +155,14 @@ struct user_states* find_min_user(struct user_states* root)
 int remove_user(struct user_states** root, unsigned long ip)
 {
     if(root == NULL || *root == NULL)
-        return ;
+        return 0;
     struct user_states* pointer = find_user(*root, ip);
     if(pointer == NULL)
         return -1;
     if(is_leaf(pointer))
     {
         release_user_tree(&pointer);
-        return ;
+        return 0;
     }
 
     struct user_states* replace = pointer -> lchild == NULL ? find_min_user(pointer -> rchild) : find_max_user(pointer -> lchild);
@@ -168,6 +170,7 @@ int remove_user(struct user_states** root, unsigned long ip)
     copy_node(&temp_node, replace);
     remove_user(&replace, replace -> user_ip_addr);
     copy_node(pointer, &temp_node);
+    return 0;
 }
 
 void rev_trav(struct user_states *root, struct user_info* dst, int* size)

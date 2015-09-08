@@ -8,6 +8,7 @@
 #define MAX_MSG 1024
 #define MAX_BUFF sizeof(struct msg_pkt)
 #define MAX_FR_LS 30
+#define MAX_MULTI_CHAT 10
 
 struct thread_args
 {
@@ -18,21 +19,24 @@ enum FLAG{
     HELLO, // client say hello to server
     BYE,
     MSG, // client sends messages to friends
+    RES_CHAT, // clients request to chat with a group of people
     FR_LS // client requires friend list
 };
 
 struct chat_msg
 {
     int session_id;
-    unsigned long des_ip[];
+    int size;
+    struct user_info dest_users[MAX_MULTI_CHAT];
     char msg_str[MAX_MSG];
 };
 
 struct friends_info
 {
     int size;
-    struct user_states users[MAX_FR_LS];
+    struct user_info users[MAX_FR_LS];
 };
+
 
 struct msg_pkt
 {
@@ -43,6 +47,10 @@ struct msg_pkt
         struct friends_info friends;
     } msg_data;
 };
+
+void log(char*, char*);
+void broadcast(struct msg_pkt*);
+
 
 
 #endif // CONNECT_H_INCLUDED

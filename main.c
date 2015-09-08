@@ -38,6 +38,7 @@ int main()
 
     release_user_tree(&root);*/
 
+
     users = create_user_tree();
     int server_sockfd = start_server(port);
     bool is_running = true;
@@ -46,6 +47,5 @@ int main()
         wait_for_new_clients(server_sockfd);
     }
     release_user_tree(&users);
-
 
 }

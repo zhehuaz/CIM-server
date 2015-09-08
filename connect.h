@@ -2,7 +2,7 @@
 #define CONNECT_H_INCLUDED
 
 #include "bi_tree.h"
-
+#include "stdio.h"
 #define QUEUE 10
 #define THREAD int
 #define MAX_MSG 1024
@@ -23,14 +23,6 @@ enum FLAG{
     FR_LS // client requires friend list
 };
 
-
-struct user_info
-{
-    unsigned long user_ip_addr;
-    char user_name[MAX_USERNAME];
-    int user_sockfd;
-};
-
 struct chat_msg
 {
     int session_id;
@@ -45,7 +37,33 @@ struct friends_info
     struct user_info users[MAX_FR_LS];
 };
 
+/**
 
+                            The structure of packect
+┍================================================================================┑
+|                                [int length]                                    |
+|================================================================================|
+|  [enum FLAG flag]   HELLO, BYE, MSG, RES_CHAT, FR_LS                           |
+|================================================================================|
+|                            [union data msg_data]                               |
+|................................................................................|
+|       struct chat_msg message         |      strcut friends_info friends       |
+|.......................................|........................................|
+|           [int session_id]            |               [int size]               |
+|               [int size]              |   ----------------------------------   |
+|           [char msg_str[]]            |   |  struct user_info dest_users[] |   |
+|   ---------------------------------   |   |................................|   |
+|   | struct user_info dest_users[] |   |   |   [unsigned long user_ip_addr] |   |
+|   |...............................|   |   |       [char user_name[]]       |   |
+|   |   [unsigned long user_ip_addr]|   |   |       [int user_sockfd]        |   |
+|   |       [char user_name[]]      |   |   ----------------------------------   |
+|   |       [int user_sockfd]       |   |                  .                     |
+|   ---------------------------------   |                  .                     |
+|                  .                    |                  .                     |
+|                  .                    |                                        |
+|                  .                    |                                        |
+==================================================================================
+*/
 struct msg_pkt
 {
     int length;
@@ -56,5 +74,12 @@ struct msg_pkt
     } msg_data;
 };
 
+//void log(char*, char*);
+void broadcast(struct msg_pkt*);
+void* client_session(void*);
+int start_server(int);
+int send_pkt(int, struct msg_pkt*);
+int recv_pkt(int, struct msg_pkt*);
+int wait_for_new_clients(int);
 
 #endif // CONNECT_H_INCLUDED

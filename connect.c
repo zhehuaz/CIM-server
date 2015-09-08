@@ -9,12 +9,11 @@
 #include <fcntl.h>
 #include <pthread.h>
 #include <errno.h>
-
-#include "bi_tree.h"
 #include "connect.h"
 
 extern struct user_states* users;
 pthread_mutex_t mutex_users = PTHREAD_MUTEX_INITIALIZER;
+int session_num = 0;
 
 
 void log(char* from, char* log_content)
@@ -24,7 +23,7 @@ void log(char* from, char* log_content)
 
 void broadcast(struct msg_pkt* msg)
 {
-    struct user_states arr_users[MAX_FR_LS];
+    struct user_info arr_users[MAX_FR_LS];
 
     pthread_mutex_lock(&mutex_users);
     int size = trav_tree(users, arr_users);
@@ -62,12 +61,12 @@ void *client_session(void *arg)
 
     log(str_ip, "Online");
     // save this user to user list
-    //struct user_states* client = create_user_node(client_sockfd, ip, "default");
+    struct user_states* client = create_user_node(client_sockfd, ip, "default");
     // ********* TODO why not create_user_node()?? *******
-    struct user_states* client = (struct user_states*) malloc(sizeof(struct user_states));
-    client ->user_sockfd = client_sockfd;
-    client ->user_ip_addr = ip;
-    strcpy(client -> user_name, "default");
+    //struct user_states* client = (struct user_states*) malloc(sizeof(struct user_states));
+    //client ->user_sockfd = client_sockfd;
+    //client ->user_ip_addr = ip;
+    //strcpy(client -> user_name, "default");
 
     pthread_mutex_lock(&mutex_users);
     add_user(&users, client);
@@ -126,17 +125,17 @@ void *client_session(void *arg)
             /**
             *   A client wants to send a message to some clients.The server is responsible
             *   to transfer this message.
-            *   A session defines a chat group with some clients in it sending and receiving
-            *   messages.The server maintains a session number to keep the session ids of all the
-            *   clients consistent and unique.
             */
             case MSG:
                 log(str_ip, "Hey, you");
-                // reserved
+                for(int i = 0;i < recv_msg.msg_data.message.size; i ++)
+                {
+                    send_pkt(recv_msg.msg_data.message.dest_users[i].user_sockfd, &recv_msg);
+                }
                 break;
             /**
             *   A client asks "Who's on?" to the server, and the server responds an array of
-            *   all the online clients' infomation.
+            *   all the online clients' infomation generated from the users' tree.
             */
             case FR_LS:
                 log(str_ip, "Who's on");
@@ -149,26 +148,33 @@ void *client_session(void *arg)
             /**
             *   Before chat to a group of clients, the requesting client need to send a request
             *   the server.Then, the server tell the other clients that one client want to chat
-            *   with all of them so that they get prepared
+            *   with all of them so that they get prepared.
+            *   A session defines a chat group with some clients in it sending and receiving
+            *   messages.The server maintains a session number to keep the session ids of all the
+            *   clients consistent and unique.
             */
             case RES_CHAT:
                 log(str_ip, "Let's play");
 
-                struct user_states *pointer;
+                //struct user_states *pointer;
                 send_msg.msg_data.message.size = 0;
                 int size = recv_msg.msg_data.message.size;
                 pthread_mutex_lock(&mutex_users);
                 for(int i = 0; i < size; i ++)
                 {
-                    pointer = find_user(&users, recv_msg.msg_data.message.dest_users[i].user_ip_addr);
+                    struct user_states *pointer = find_user(users, recv_msg.msg_data.message.dest_users[i].user_ip_addr);
                     if(pointer != NULL)
+                    {
                         trans_node(&send_msg.msg_data.message.dest_users[send_msg.msg_data.message.size ++],
-                         &recv_msg.msg_data.message.dest_users[i]);
+                            pointer);
+                    }
                     else
                     {
                         // TODO Do I need to tell him that this guy has gone?
+                        log("host", "Can't find this one.");
                     }
                 }
+                send_msg.msg_data.message.session_id = session_num ++;
                 pthread_mutex_unlock(&mutex_users);
                 send_msg.flag = RES_CHAT;
                 for(int i = 0;i < send_msg.msg_data.message.size;i ++)
@@ -240,13 +246,13 @@ int wait_for_new_clients(int server_sockfd)
         perror("accept");
         return -1;
     }
-    int thread_id;
 
     struct thread_args args = {client_sockfd};
-    int pthr_error = pthread_create(&thread_id, NULL, client_session, (void *)&args);
+    int pthr_error = pthread_create(&client_thread, NULL, client_session, (void *)&args);
     if(pthr_error != 0)
     {
         perror("thread create");
         return -1;
     }
+    return 0;
 }
